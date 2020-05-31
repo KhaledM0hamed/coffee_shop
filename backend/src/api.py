@@ -53,7 +53,7 @@ def get_drinks():
 
 @app.route('/drinks-detail', methods=['GET'])
 @requires_auth('get:drinks-detail')
-def get_drinks_detail():
+def get_drinks_detail(jwt):
     try:
         drinks_details = list(map(Drink.long, Drink.query.all()))
 
@@ -74,26 +74,43 @@ def get_drinks_detail():
         or appropriate status code indicating reason for failure
 '''
 
+#
+# @app.route('/drinks', methods=['POST'])
+# @requires_auth('post:drinks')
+# def add_drink(jwt):
+#     try:
+#         request_body = request.get_json()
+#         title = request_body.get('title', None)
+#         recipe = request_body.get('recipe', None)
+#         drink = Drink(title=title, recipe=json.dumps(recipe))
+#         Drink.insert(drink)
+#
+#         new_drink = Drink.query.filter_by(id=drink.id).first()
+#
+#         return jsonify({
+#             'success': True,
+#             'drinks': [new_drink.long()]
+#         }), 200
+#     except Exception:
+#         abort(422)
+
 
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
-def add_drink():
+def add_new_drink(payload):
+    body = request.get_json()
+    title = body.get('title', None)
+    recipe = str(json.dumps(body.get('recipe', None)))
+    drink = Drink(title=title, recipe=recipe)
     try:
-        request_body = request.get_json(force=True)
-        title = request_body.get('title', None)
-        recipe = request_body.get('recipe', None)
-        drink = Drink(title=title, recipe=json.dumps(recipe))
-        Drink.insert(drink)
+        drink.insert()
+    except:
+        abort(500)
 
-        new_drink = Drink.query.filter_by(id=drink.id).first()
-
-        return jsonify({
-            'success': True,
-            'drinks': list(new_drink.long())
-        }), 200
-    except Exception:
-        abort(422)
-
+    return jsonify({
+        "success": True,
+        "drinks": [drink.long()]
+    })
 
 '''
 @TODO implement endpoint
@@ -111,10 +128,10 @@ def add_drink():
 
 @app.route('/drinks/<int:drink_id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
-def replace_drink(drink_id):
+def replace_drink(jwt, drink_id):
     request_body = request.get_json()
     new_title = request_body.get('title', None)
-    new_recipe = request_body.get('recipe', None)
+    new_recipe = str(json.dumps(request_body.get('recipe', None)))
 
     try:
         drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
@@ -126,13 +143,14 @@ def replace_drink(drink_id):
         if new_title is not None:
             drink.title = new_title
         if new_recipe is not None:
-            drink.recipe = json.dumps(new_recipe)
+            drink.recipe = new_recipe
+
 
         drink.update()
-        updated_drink = drink.query.filter_by(drink.id == drink_id).first()
+        # updated_drink = drink.query.filter_by(drink.id == drink_id).first()
 
         return jsonify({"success": True,
-                        "drinks": list(updated_drink.long)}), 200
+                        "drinks": [drink.long()]})
 
     except Exception:
         abort(401)
@@ -152,7 +170,7 @@ def replace_drink(drink_id):
 
 @app.route('/drinks/<int:drink_id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
-def delete_drink(drink_id):
+def delete_drink(jwt, drink_id):
     try:
         drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
 
@@ -214,5 +232,5 @@ def not_found(error):
 def auth_error(error):
     return jsonify({'success': False,
                     'error': error.status_code,
-                    'message': error.error['description']
+                    'message': "something went wrong"
                     }), error.status_code

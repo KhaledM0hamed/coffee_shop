@@ -4,9 +4,9 @@ from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
 
-AUTH0_DOMAIN = 'udacity-fsnd.auth0.com'
+AUTH0_DOMAIN = 'baka-dev.auth0.com'
 ALGORITHMS = ['RS256']
-API_AUDIENCE = 'dev'
+API_AUDIENCE = 'coffee'
 
 ## AuthError Exception
 '''
@@ -37,15 +37,19 @@ class AuthError(Exception):
 def get_token_auth_header():
     auth_header = request.headers.get('Authorization', None)
     if not auth_header:
-        raise AuthError({"error": 'authorization token is not found in headers'}, 401)
+        raise AuthError({'code': 'invalid_header',
+                         'description': 'Authorization header is missing.'}, 401)
 
     token_parts = auth_header.split()
     if token_parts[0].lower() != 'bearer':
-        raise AuthError({"error": 'invalid token'}, 401)
+        raise AuthError({'code': 'invalid_header',
+                         'description': '"Bearer" missing from Authorization header.'}, 401)
     elif len(token_parts) == 1:
-        raise AuthError({"error": 'invalid token'}, 401)
+        raise AuthError({'code': 'invalid_header',
+                         'description': 'The token is missing from Authorization header.'}, 401)
     elif len(token_parts) > 2:
-        raise AuthError({"error": 'invalid token'}, 401)
+        raise AuthError({'code': 'invalid_header',
+                         'description': 'Authorization token must be bearer token.'}, 401)
 
     return token_parts[1]
 
@@ -137,11 +141,11 @@ def verify_decode_jwt(token):
             raise AuthError({
                 'code': 'invalid_header',
                 'description': 'Unable to parse authentication token.'
-            }, 400)
+            }, 401)
     raise AuthError({
         'code': 'invalid_header',
         'description': 'Unable to find the appropriate key.'
-    }, 400)
+    }, 401)
 
 
 '''
